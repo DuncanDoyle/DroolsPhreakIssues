@@ -102,7 +102,7 @@ public class PhreakyTest {
 		return event;
 	}
 
-	protected void insertEvent(final String code, final SimpleEvent.Status status, final String idC, final String idK) {
+	protected void insertEvent(final String code, final SimpleEvent.Status status) {
 		kieSession.insert(createEvent(code, status));
 	}
 
