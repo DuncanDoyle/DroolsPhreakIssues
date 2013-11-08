@@ -62,18 +62,18 @@ public class PhreakyTest {
 	private void testFrequency(final String code, final int fq) {
 
 		for (int i = 0; i < fq; i++) {
-			insertEvent(code, SimpleEvent.Status.ENRICHED, "1", "1");
+			insertEvent(code, SimpleEvent.Status.ENRICHED);
 		}
 		kieSession.fireAllRules();
 		assertEquals("All event must be still in working memory", fq, kieSession.getFactHandles().size());
 		assertEquals("No event must be in channel out", 0, channel.getSentObject().size());
 
-		insertEvent(code, SimpleEvent.Status.ENRICHED, "1", "1");
+		insertEvent(code, SimpleEvent.Status.ENRICHED);
 		kieSession.fireAllRules();
 		assertEquals("Last event must be in working memory", 1, kieSession.getFactHandles().size());
 		assertEquals("One event must be in channel out", 1, channel.getSentObject().size());
 
-		insertEvent(code, SimpleEvent.Status.ENRICHED, "1", "1");
+		insertEvent(code, SimpleEvent.Status.ENRICHED);
 		kieSession.fireAllRules();
 		assertEquals("Two last event must be in working memory", 2, kieSession.getFactHandles().size());
 		assertEquals("Only one event must be in channel out", 1, channel.getSentObject().size());
@@ -82,7 +82,7 @@ public class PhreakyTest {
 	private void testFrequencyTwo(final String code, final int fq) {
 		// Just some testing
 		for (int i = 0; i < fq; i++) {
-			insertEvent(code, SimpleEvent.Status.ENRICHED, "1", "1");
+			insertEvent(code, SimpleEvent.Status.ENRICHED);
 		}
 		kieSession.fireAllRules();
 		/*
