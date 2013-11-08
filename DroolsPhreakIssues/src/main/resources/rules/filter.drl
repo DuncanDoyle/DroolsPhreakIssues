@@ -1,0 +1,60 @@
+package org.jboss.ddoyle.drools.sample
+
+import org.jboss.ddoyle.drools.sample.SimpleEvent;
+import org.jboss.ddoyle.drools.sample.ChannelData
+import org.jboss.ddoyle.drools.sample.SimpleEvent.Status;
+
+declare SimpleEvent
+    @role( event )
+    @timestamp( eventDate.getTime() )
+    @expires( 2d )
+end
+
+rule "TECH-Non-Block"
+    salience -1000
+    when
+        ev : SimpleEvent( status==SimpleEvent.Status.ENRICHED )
+    then
+    	ev.setStatus(SimpleEvent.Status.TO_SEND);
+    	update(ev);
+    end
+
+rule "TECH-Send_to_channel."
+    @IDRULE("FILTER-001")
+    salience -1000
+    when
+        ev : SimpleEvent( status==SimpleEvent.Status.TO_SEND )
+    then
+    	channels["out"].send(new ChannelData(ev, drools, null));
+    	ev.setStatus(SimpleEvent.Status.SENT);
+    	update(ev);
+    end
+
+//Ignore the first 18 events of "EVT_K_08" by setting the status of the events to 'FILTERED'.
+/* Please note that this set of rules is actually incorrect as it assumes that the firing of the rules is done in exactly the same order
+ * as the activation of the rule (i.e. the order of events coming in), which is incorrect. Hence, the accumulate with the temporal constraint 
+ * (i.e 'this before event') does not work as intended because it could be (and this is the case with ReteOO) that the last event that was inserted 
+ * is set to FILTERED first, which breaks the intended logic of the accumulate constraint.
+ */
+rule "Tech-ruel-RG-FLT-03A: Ignore the first 18 events of K08"
+    when 
+    	event : SimpleEvent( status == SimpleEvent.Status.ENRICHED, code == "K08" )
+    	//Count the number of events with status 'filtered' that happened before the event we now match on.
+    	count : Long() from accumulate ( $s:SimpleEvent(this != event, status==SimpleEvent.Status.FILTERED, code==event.code, this before event), count( $s ) )
+    	if (count.intValue() >= 18) break[greaterThan]
+    then
+        event.setStatus(SimpleEvent.Status.FILTERED);
+        update(event);
+    then[greaterThan]
+        event.setStatus(SimpleEvent.Status.TO_SEND);
+        update(event);
+    end
+
+//Retract all filtered events once we've sent an event.
+rule "TECH-rule-RG-FLT-03B Retract all filtered events once we've sent an event."
+	when 
+    	event: SimpleEvent( status == SimpleEvent.Status.FILTERED, code == "K08" )
+        SimpleEvent( status == SimpleEvent.Status.TO_SEND , code == event.code, this after[0] event)
+    then 
+		retract(event);
+    end
